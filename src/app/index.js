@@ -83,11 +83,9 @@ export default function App() {
   const [gelasAir, setGelasAir] = useState(0);
   const targetAirGelas = 8;
 
-  // Berat Badan & BMI States
+  // Berat Badan States
   const [beratInput, setBeratInput] = useState('');
   const [riwayatBerat, setRiwayatBerat] = useState([]);
-  const [tinggiInput, setTinggiInput] = useState('');
-  const [tinggiTersimpan, setTinggiTersimpan] = useState(null);
 
   // Jadwal Latihan States
   const daftarHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
@@ -111,7 +109,6 @@ export default function App() {
         const airTersimpan = await AsyncStorage.getItem('@jumlah_air');
         const beratTersimpan = await AsyncStorage.getItem('@riwayat_berat');
         const darkModeTersimpan = await AsyncStorage.getItem('@dark_mode');
-        const tinggiBadanTersimpan = await AsyncStorage.getItem('@tinggi_badan');
 
         let jadwalBerjalan = jadwalTersimpan ? JSON.parse(jadwalTersimpan) : jadwalBawaan;
 
@@ -119,10 +116,6 @@ export default function App() {
         if (airTersimpan) setGelasAir(parseInt(airTersimpan, 10));
         if (beratTersimpan) setRiwayatBerat(JSON.parse(beratTersimpan));
         if (darkModeTersimpan !== null) setIsDarkMode(JSON.parse(darkModeTersimpan));
-        if (tinggiBadanTersimpan) {
-          setTinggiInput(tinggiBadanTersimpan);
-          setTinggiTersimpan(parseFloat(tinggiBadanTersimpan));
-        }
 
         if (tanggalTersimpan !== tanggalHariIni) {
           Object.keys(jadwalBerjalan).forEach((hari) => {
@@ -155,7 +148,6 @@ export default function App() {
   useEffect(() => { if (isReady) AsyncStorage.setItem('@riwayat_berat', JSON.stringify(riwayatBerat)); }, [riwayatBerat, isReady]);
   useEffect(() => { if (isReady) AsyncStorage.setItem('@dark_mode', JSON.stringify(isDarkMode)); }, [isDarkMode, isReady]);
 
-  // Fungsi-fungsi tombol
   const simpanTargetBaru = async () => {
     const angkaTarget = parseInt(inputTargetBaru, 10);
     if (!angkaTarget || isNaN(angkaTarget)) {
@@ -166,16 +158,6 @@ export default function App() {
     await AsyncStorage.setItem('@target_kalori', angkaTarget.toString());
     setInputTargetBaru('');
     setModalVisible(false);
-  };
-
-  const simpanTinggiBadan = async () => {
-    const tinggiAngka = parseFloat(tinggiInput.replace(',', '.'));
-    if (!tinggiAngka || isNaN(tinggiAngka)) {
-      alert('Masukkan tinggi badan yang valid (contoh: 170)');
-      return;
-    }
-    setTinggiTersimpan(tinggiAngka);
-    await AsyncStorage.setItem('@tinggi_badan', tinggiAngka.toString());
   };
 
   const hapusSemuaBerat = () => {
@@ -192,7 +174,9 @@ export default function App() {
     ]);
   };
 
-  const resetAir = () => setGelasAir(0);
+  const resetAir = () => {
+    setGelasAir(0);
+  };
 
   const resetLatihanHariIni = () => {
     Alert.alert('Konfirmasi', `Reset centang latihan hari ${hariAktif}?`, [
@@ -223,7 +207,10 @@ export default function App() {
     setBeratInput('');
   };
 
-  const hapusBeratBadan = (idDihapus) => setRiwayatBerat(riwayatBerat.filter(item => item.id !== idDihapus));
+  const hapusBeratBadan = (idDihapus) => {
+    setRiwayatBerat(riwayatBerat.filter(item => item.id !== idDihapus));
+  };
+
   const tambahAir = () => setGelasAir(gelasAir + 1);
   const kurangAir = () => { if (gelasAir > 0) setGelasAir(gelasAir - 1); };
 
@@ -233,8 +220,14 @@ export default function App() {
     setJadwalLatihan({ ...jadwalLatihan, [hariAktif]: [...jadwalLatihan[hariAktif], tugasBaru] });
     setInputLatihanBaru('');
   };
-  const hapusLatihan = (idYangDihapus) => setJadwalLatihan({ ...jadwalLatihan, [hariAktif]: jadwalLatihan[hariAktif].filter((item) => item.id !== idYangDihapus) });
-  const toggleSelesai = (idTugas) => setJadwalLatihan({ ...jadwalLatihan, [hariAktif]: jadwalLatihan[hariAktif].map((item) => item.id === idTugas ? { ...item, selesai: !item.selesai } : item) });
+
+  const hapusLatihan = (idYangDihapus) => {
+    setJadwalLatihan({ ...jadwalLatihan, [hariAktif]: jadwalLatihan[hariAktif].filter((item) => item.id !== idYangDihapus) });
+  };
+
+  const toggleSelesai = (idTugas) => {
+    setJadwalLatihan({ ...jadwalLatihan, [hariAktif]: jadwalLatihan[hariAktif].map((item) => item.id === idTugas ? { ...item, selesai: !item.selesai } : item) });
+  };
 
   const tambahKalori = () => {
     if (!kaloriInput || isNaN(kaloriInput)) {
@@ -251,14 +244,17 @@ export default function App() {
     setNamaMakanan('');
     setKaloriInput('');
   };
-  const hapusKalori = (idYangDihapus) => setRiwayatKalori(riwayatKalori.filter((item) => item.id !== idYangDihapus));
 
-  // Kalkulasi Otomatis
+  const hapusKalori = (idYangDihapus) => {
+    setRiwayatKalori(riwayatKalori.filter((item) => item.id !== idYangDihapus));
+  };
+
   const totalKalori = riwayatKalori.reduce((total, item) => total + item.kalori, 0);
   const sisaKalori = targetKalori - totalKalori;
   const persentaseProgressKalori = Math.min((totalKalori / targetKalori) * 100, 100);
   const persentaseProgressAir = Math.min((gelasAir / targetAirGelas) * 100, 100);
 
+  // Perhitungan Statistik Mingguan
   let totalSemuaLatihan = 0;
   let totalLatihanSelesai = 0;
   Object.keys(jadwalLatihan).forEach((hari) => {
@@ -266,31 +262,6 @@ export default function App() {
     totalLatihanSelesai += jadwalLatihan[hari].filter(item => item.selesai).length;
   });
   const persentaseWorkoutMingguan = totalSemuaLatihan > 0 ? Math.round((totalLatihanSelesai / totalSemuaLatihan) * 100) : 0;
-
-  // PERHITUNGAN BMI
-  let nilaiBMI = 0;
-  let kategoriBMI = '-';
-  let warnaBMI = '#8e8e93';
-
-  if (riwayatBerat.length > 0 && tinggiTersimpan) {
-    const beratTerakhir = riwayatBerat[0].berat;
-    const tinggiMeter = tinggiTersimpan / 100;
-    nilaiBMI = beratTerakhir / (tinggiMeter * tinggiMeter);
-
-    if (nilaiBMI < 18.5) {
-      kategoriBMI = 'Kurus (Underweight)';
-      warnaBMI = '#0a84ff'; // Biru
-    } else if (nilaiBMI >= 18.5 && nilaiBMI <= 24.9) {
-      kategoriBMI = 'Normal (Ideal)';
-      warnaBMI = '#32d74b'; // Hijau
-    } else if (nilaiBMI >= 25 && nilaiBMI <= 29.9) {
-      kategoriBMI = 'Berlebih (Overweight)';
-      warnaBMI = '#ff9f0a'; // Oranye
-    } else {
-      kategoriBMI = 'Obesitas';
-      warnaBMI = '#ff453a'; // Merah
-    }
-  }
 
   if (!isReady) {
     return (
@@ -301,7 +272,7 @@ export default function App() {
     );
   }
 
-  // Tema Dinamis
+  // Dinamis Style berdasarkan Mode Aktif
   const themeContainer = { backgroundColor: isDarkMode ? '#000000' : '#f2f2f7' };
   const themeCard = { backgroundColor: isDarkMode ? '#1c1c1e' : '#ffffff' };
   const themeTextMain = { color: isDarkMode ? '#ffffff' : '#1c1c1e' };
@@ -319,7 +290,12 @@ export default function App() {
           <Text style={[styles.header, themeTextMain]}>Tracker Latihan</Text>
           <View style={styles.darkModeToggleContainer}>
             <Text style={[styles.darkModeLabel, {color: isDarkMode ? '#aeaeb2' : '#8e8e93'}]}>{isDarkMode ? '🌙 Dark' : '☀️ Light'}</Text>
-            <Switch value={isDarkMode} onValueChange={(val) => setIsDarkMode(val)} trackColor={{ false: '#d1d1d6', true: '#007aff' }} thumbColor={'#ffffff'} />
+            <Switch
+              value={isDarkMode}
+              onValueChange={(val) => setIsDarkMode(val)}
+              trackColor={{ false: '#d1d1d6', true: '#007aff' }}
+              thumbColor={'#ffffff'}
+            />
           </View>
         </View>
 
@@ -339,57 +315,18 @@ export default function App() {
           </View>
         </View>
 
-        {/* KARTU BERAT BADAN & KALKULATOR BMI */}
+        {/* KARTU BERAT BADAN */}
         <View style={[styles.card, themeCard]}>
           <View style={styles.calorieHeaderRow}>
-            <Text style={[styles.cardTitle, themeTextMain]}>Catatan & BMI</Text>
+            <Text style={[styles.cardTitle, themeTextMain]}>Catatan Berat Badan</Text>
             {riwayatBerat.length > 0 && (
               <TouchableOpacity onPress={hapusSemuaBerat}>
                 <Text style={styles.textHapusSemua}>Hapus Semua</Text>
               </TouchableOpacity>
             )}
           </View>
+          <Text style={styles.subtitle}>Pantau progres bulking atau cutting rutinmu.</Text>
 
-          {/* Kotak BMI Dinamis */}
-          <View style={[styles.bmiContainer, themeSubCard]}>
-            <View style={styles.bmiRow}>
-              {/* Sisi Kiri: Input Tinggi */}
-              <View style={{flex: 1, paddingRight: 15}}>
-                <Text style={[styles.bmiLabel, themeTextMain]}>Tinggi Badan (cm)</Text>
-                <View style={[styles.inputRow, {marginBottom: 0}]}>
-                  <TextInput 
-                    style={[styles.input, themeInput, {flex: 1, marginRight: 8, marginBottom: 0, height: 40, paddingVertical: 5}]} 
-                    placeholder="Misal: 170" 
-                    placeholderTextColor={isDarkMode ? '#636366' : '#9ca3af'}
-                    keyboardType="numeric" 
-                    value={tinggiInput} 
-                    onChangeText={setTinggiInput} 
-                  />
-                  <TouchableOpacity style={[styles.addButton, {height: 40, paddingHorizontal: 12, paddingVertical: 0}]} onPress={simpanTinggiBadan}>
-                    <Text style={[styles.buttonText, {fontSize: 14}]}>Set</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={[styles.statDividerVertical, {backgroundColor: isDarkMode ? '#3a3a3c' : '#e5e5ea', height: '100%'}]} />
-
-              {/* Sisi Kanan: Hasil BMI */}
-              <View style={[styles.bmiResultBox, {flex: 1}]}>
-                {nilaiBMI > 0 ? (
-                  <>
-                    <Text style={[styles.bmiValue, {color: warnaBMI}]}>{nilaiBMI.toFixed(1)}</Text>
-                    <Text style={[styles.bmiCategory, {color: warnaBMI}]}>{kategoriBMI}</Text>
-                  </>
-                ) : (
-                  <Text style={[styles.emptyText, {fontSize: 12}]}>Isi tinggi & catat berat min 1x</Text>
-                )}
-              </View>
-            </View>
-          </View>
-
-          <View style={[styles.divider, isDarkMode && {backgroundColor: '#3a3a3c'}]} />
-
-          <Text style={styles.subtitle}>Catatan Berat Badan</Text>
           <View style={styles.inputRow}>
             <TextInput 
               style={[styles.input, themeInput, {flex: 1, marginRight: 10, marginBottom: 0}]} 
@@ -624,15 +561,6 @@ const styles = StyleSheet.create({
   statDividerVertical: { width: 1, height: '80%', backgroundColor: '#3a3a3c' },
   cardTitle: { fontSize: 18, fontWeight: '600', color: '#000' },
   subtitle: { color: '#8e8e93', marginBottom: 15, fontSize: 14, fontWeight: '600' },
-  
-  // Style Khusus Kalkulator BMI
-  bmiContainer: { padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 15 },
-  bmiRow: { flexDirection: 'row', alignItems: 'center' },
-  bmiLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
-  bmiResultBox: { alignItems: 'center', justifyContent: 'center', paddingLeft: 10 },
-  bmiValue: { fontSize: 26, fontWeight: 'bold', marginBottom: 2 },
-  bmiCategory: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-
   daysWrapper: { flexDirection: 'row', marginBottom: 5 },
   dayTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f2f2f7', marginRight: 8 },
   dayTabActive: { backgroundColor: '#007aff' },
